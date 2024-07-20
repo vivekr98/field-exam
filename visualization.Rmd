@@ -1,0 +1,357 @@
+---
+title: "Visualization"
+output: html_document
+date: "2024-07-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(grDevices)
+library(igraph)
+```
+
+Load in data
+```{r}
+df <- read_csv("pre_adj_matrix.csv")
+attributes <- read.csv("attributes.csv")
+```
+
+
+```{r}
+adj_matrix <- as.data.frame.matrix(table(df))
+
+```
+
+```{r}
+
+farm_1 <- adj_matrix[26,]
+farm_1[which(farm_1 > 0)]
+```
+```{r}
+net <- graph_from_biadjacency_matrix(adj_matrix, mode = "all", weighted = TRUE)
+```
+
+```{r}
+net
+
+```
+
+```{r}
+type_net <- vertex_attr(net, "type") 
+table(type_net)
+```
+
+There are 6795 farms and 201 agents.
+
+Add in attributes to the network
+
+```{r}
+attributes <- attributes[!is.na(attributes$name), ]
+
+add_attributes <- function(network, attributes, value){
+  
+  set_vertex_attr(graph = network,
+                  name = value,
+                  value = attributes[[value]])
+  
+}
+
+attribute_list <- attributes %>% colnames()
+attribute_list <- setdiff(attribute_list, c("name", "type"))
+
+
+
+for (i in attribute_list) {
+  net <- add_attributes(net, attributes, i)
+}
+
+
+```
+
+
+Plot the graph
+
+```{r}
+
+V(net)$color[type_net == FALSE] <- rgb(red = 1, green = 0, 
+                                             blue = 0, alpha = .5)
+
+
+V(net)$color[type_net == TRUE] <- rgb(red = 0, green = 1, 
+                                            blue = 0, alpha = .5) 
+
+#set labesl
+V(net)$label <- V(net)$name 
+V(net)$label.color <- rgb(0, 0, .2, .5) 
+V(net)$label.cex <- .1
+
+#set size
+V(net)$size <- 3 
+V(net)$frame.color <- V(net)$color 
+
+#set edge color according to the edge weight
+min_weight <- min(E(net)$weight)
+max_weight <- max(E(net)$weight)
+E(net)$color_intensity <- (E(net)$weight - min_weight) / (max_weight - min_weight)
+
+E(net)$color <- rgb(0, 0, 0, alpha = 0.5)  
+
+# red for edges with highest weight
+E(net)$color[E(net)$color_intensity > 0] <- rgb(1, 0, 0, alpha = 0.5) 
+
+
+layout <- layout_with_fr(net, grid = "nogrid")
+
+pdf("test.pdf")
+plot(net, edge.color = E(net)$color, layout = layout)
+dev.off() 
+
+```
+
+Incoporating node attributes into the plot;
+
+```{r}
+library(car)
+
+is_agent <- type_net == TRUE
+non_agents <- !is_agent
+
+# standardize weights with log
+log_weights <- log1p(E(net)$weight)  
+
+# normalize weights to range [0, 1]
+min_log_weight <- min(log_weights)
+max_log_weight <- max(log_weights)
+normalized_weights <- (log_weights - min_log_weight) / (max_log_weight - min_log_weight)
+
+# create color palette from light blue to dark blue
+color_palette <- colorRampPalette(c("lightblue", "darkblue"))(100)
+
+# normalized weights to the color palette, add edge weights to color
+edge_colors <- color_palette[ceiling(normalized_weights * 99) + 1]
+E(net)$color <- edge_colors
+
+
+organization_type <- V(net)$organization_type[is_agent]
+
+organization_node_color <- recode(organization_type,
+                                  "'individual agent' = 'black';
+                                  'association' = 'green';
+                                  'labor contractor (agent)' = 'yellow';
+                                  'NA' = 'grey'")
+
+# set attributes of nodes
+V(net)$shape <- "circle"
+V(net)$shape[is_agent] <- "square"
+V(net)$color[is_agent] <- organization_node_color 
+V(net)$frame.color[is_agent] <- organization_node_color
+
+
+farm_type <- V(net)$organization_type[!is_agent]
+
+farm_node_color <- recode(farm_type,
+                                  "'individual farm' = 'darkgrey';
+                                  'joint' = 'blue';
+                                  'labor contractor' = 'yellow';
+                                  'NA' = 'grey'")
+
+# set color of nodes according to type
+V(net)$color[!is_agent] <- farm_node_color
+V(net)$frame.color[!is_agent] <- farm_node_color
+
+
+
+V(net)$label[!is_agent] <- NA
+
+V(net)$label[is_agent] <- V(net)$name[is_agent] 
+V(net)$label.color <- rgb(0, 0, .2, .5) 
+V(net)$label.cex <- .2 
+
+
+V(net)$size[is_agent] <- 2
+
+
+# set size of node to number of workers
+log_workers <- log1p(V(net)$NBR_WORKERS_REQUESTED[non_agents])  
+
+# normalize the transformed values to a range [0, 1]
+normalized_sizes <- (log_workers - min(log_workers)) / (max(log_workers) - min(log_workers))
+
+# scale the normalized values
+min_size <- 0.1
+max_size <- 3.5
+scaled_sizes <- min_size + normalized_sizes * (max_size - min_size)  # Scales to range [0.1, 2.5]
+
+#assign the scaled sizes to non-agent vertices
+V(net)$size[non_agents] <- scaled_sizes
+
+
+layout <- layout_with_fr(net, grid = "nogrid")
+
+
+pdf("test_attributes.pdf")
+plot(net, edge.color = E(net)$color, layout = layout)
+```
+
+
+Looks good!
+
+
+### Now lets try by crop type;
+
+```{r}
+library(car)
+library(viridis)
+
+is_agent <- type_net == TRUE
+non_agents <- !is_agent
+
+# normalize log-transformed weights to range [0, 1]
+log_weights <- log1p(E(net)$weight) 
+min_log_weight <- min(log_weights)
+max_log_weight <- max(log_weights)
+normalized_weights <- (log_weights - min_log_weight) / (max_log_weight - min_log_weight)
+
+#create a color palette from light blue to dark blue
+color_palette <- colorRampPalette(c("lightblue", "darkblue"))(100)
+
+# normalized weights to palette
+edge_colors <- color_palette[ceiling(normalized_weights * 99) + 1]
+# Set edge colors
+E(net)$color <- edge_colors
+
+
+organization_type <- V(net)$organization_type[is_agent]
+
+organization_node_color <- recode(organization_type,
+                                  "'individual agent' = 'black';
+                                  'association' = 'green';
+                                  'labor contractor (agent)' = 'yellow';
+                                  'NA' = 'grey'")
+
+V(net)$shape <- "circle"
+V(net)$shape[is_agent] <- "square"
+V(net)$color[is_agent] <- organization_node_color 
+V(net)$frame.color[is_agent] <- organization_node_color
+
+
+num_colors <- length(unique(V(net)$crop_type))
+random_colors <- turbo(num_colors)
+
+# create a named vector for mapping crop types to colors
+crop_types <- unique(V(net)$crop_type[non_agents])
+color_mapping <- setNames(sample(random_colors, num_colors), crop_types)
+
+# apply colors to nodes
+V(net)$color[non_agents] <- sapply(V(net)$crop_type[non_agents], function(crop) {
+  color_mapping[[crop]]
+})
+
+V(net)$frame.color[non_agents] <- V(net)$color[non_agents]
+
+
+
+
+V(net)$label[!is_agent] <- NA
+
+V(net)$label[is_agent] <- V(net)$name[is_agent] 
+V(net)$label.color <- rgb(0, 0, .2, .5)
+V(net)$label.cex <- .2 
+
+
+V(net)$size[is_agent] <- 2
+
+
+log_workers <- log1p(V(net)$NBR_WORKERS_REQUESTED[non_agents])  
+
+# normalize the transformed values to a range [0, 1]
+normalized_sizes <- (log_workers - min(log_workers)) / (max(log_workers) - min(log_workers))
+
+# scale the normalized values for size of node
+min_size <- 0.1
+max_size <- 3.5
+scaled_sizes <- min_size + normalized_sizes * (max_size - min_size)  # Scales to range [0.1, 2.5]
+
+# assign the scaled sizes to non-agent vertices
+V(net)$size[non_agents] <- scaled_sizes
+
+
+# use fr layout for the graph
+layout <- layout_with_fr(net, grid = "nogrid")
+
+
+png(filename = "graph.png", width = 2000, height = 1500, res = 300)
+
+plot(net, edge.color = E(net)$color, layout = layout)
+
+dev.off()
+
+
+```
+
+```{r}
+png(filename = "legend.png", width = 800, height = 800, res = 150)
+
+par(mar = c(1, 1, 1, 1))
+
+plot.new()
+
+legend("center",  
+       legend = names(color_mapping),
+       fill = color_mapping,
+       title = "Crop Type",
+       cex = 1.2,   
+       bty = "n",
+       xjust = 0.5,  
+       yjust = 0.5
+)
+
+dev.off()
+
+```
+
+
+
+## Mapping
+
+
+```{r}
+
+library(ggplot2)
+library(ggmap)
+
+#pls don't take my key 
+register_stadiamaps(key = "3f7d7bab-b356-43a7-8cda-645320b0e5d9")
+
+
+vertex_data <- attributes %>%
+  mutate(latitude = ifelse(class == 'employer', worksite_latitude_adj, agent_latitude),
+         longitude = ifelse(class == 'employer', worksite_longitude_adj, agent_longitude))
+  
+  
+
+edge_list <- get.data.frame(net, what = "edges")
+edge_list <- merge(edge_list, vertex_data, by.x = "from", by.y = "name")
+edge_list <- merge(edge_list, vertex_data, by.x = "to", by.y = "name", suffixes = c(".from", ".to"))
+
+
+bbox <- c(left = -150, bottom = 10, right = -65, top = 50)
+
+
+map <- get_map(location = "united states", zoom = 4, maptype = "stamen_toner_lite", source = "stadia", scale="auto")
+
+
+ggmap(map) +
+  geom_segment(data = edge_list, aes(x = longitude.from, y = latitude.from, xend = longitude.to, yend = latitude.to), color = "blue", size = .5, alpha = 0.1) +
+  geom_point(data = vertex_data, aes(x = longitude, y = latitude, color = as.factor(ORGANIZATION_FLAG), alpha = 0.3), size = 0.3) +
+
+  theme_minimal() 
+
+```
+
+
+
+
+
+
+

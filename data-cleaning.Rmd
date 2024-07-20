@@ -1,0 +1,482 @@
+---
+title: "data-cleaning"
+output: html_document
+date: "2024-07-10"
+---
+
+## get packages
+```{r setup, include=FALSE}
+library(tidyverse)
+library(dplyr)
+library(readr)
+library(readxl)
+library(stringdist)
+library(tm)
+library(RecordLinkage)
+library(stringr)
+library(igraph)
+```
+
+
+```{r}
+## load FY 2023 H2A data
+
+df <- read_excel("H-2A_Disclosure_Data_FY16_updated.xlsx")
+```
+
+# Data Cleaning
+
+
+```{r}
+#some helper functions
+
+clean <- function(a_string) {
+  ifelse(is.na(a_string), NA, {
+    a_string %>%
+      tolower() %>%
+      str_remove_all("[[:punct:]]") %>%
+      str_squish() %>%
+      iconv(to = "ASCII//TRANSLIT") %>%
+      str_replace_all("\\binc\\b|\\bllc\\b", "")
+  })
+}
+
+
+```
+
+
+Create a single column for addresses
+```{r}
+
+#make one string for employer address
+df <- df %>%
+  mutate(ADDRESS = paste(EMPLOYER_ADDRESS1, EMPLOYER_CITY, EMPLOYER_STATE, EMPLOYER_POSTAL_CODE, sep = " "),
+         AGENT_ADDRESS = ifelse(is.na(AGENT_ATTORNEY_CITY) | is.na(AGENT_ATTORNEY_STATE),
+                                NA,
+                                paste(AGENT_ATTORNEY_CITY, AGENT_ATTORNEY_STATE, sep = " ")))
+
+#clean employer names and addresses
+df <- df %>%
+  mutate(EMPLOYER_NAME_CLEAN = clean(EMPLOYER_NAME),
+         EMPLOYER_ADDRESS_CLEAN = clean(ADDRESS),
+         AGENT_NAME_CLEAN = clean(LAWFIRM_NAME),
+         AGENT_ADDRESS_CLEAN = clean(AGENT_ADDRESS))
+
+```
+
+This is an administrative dataset based on user-entry of applications, so unfortunately there are a lot of typos and inconsistencies in the spelling of names and addresses. Sometimes there is an additional "and", or "street" vs "st" or random abbreviations and suffixes. To accurately capture if the application is refering to a unique or duplicate farm/agent, I use some basic matching algorithms.
+
+
+For matching, I use the average of the string distance for both the employer name and the employer address. This is because there are quite a few applications where the employer name is quite distinct in terms of string distance ("Washington Farm Association" vs WA Farm ASC"), but have the same addresses. It seems clear that these are referring to the same employer, so the average measure between these two variables seems like a good way to uniquely identify.
+
+``` {r}
+
+#string distance
+farm_name_dist <- stringdistmatrix(df$EMPLOYER_NAME_CLEAN, df$EMPLOYER_NAME_CLEAN, method = "jw")
+address_dist <- stringdistmatrix(df$EMPLOYER_ADDRESS_CLEAN, df$EMPLOYER_ADDRESS_CLEAN, method = "jw")
+
+#average distance
+combined_dist <- (farm_name_dist + address_dist) / 2
+
+#8iol clustering of combined distance
+hc <- hclust(as.dist(combined_dist), method = "average")
+
+#cut the tree to form clusters
+clusters <- cutree(hc, h = 0.2) 
+```
+
+Here each cluster will refer to a unique employer/farm
+
+```{r}
+#add back into the dataframe
+df <- df %>%
+  mutate(cluster_id = clusters)
+```
+
+
+### some checks on the clustering process/matching
+```{r}
+matched_clusters <- df %>%
+  select(c(cluster_id, EMPLOYER_NAME_CLEAN, EMPLOYER_ADDRESS_CLEAN)) %>%
+  group_by(cluster_id) %>%
+  filter(n() > 1) %>%
+  ungroup()
+```
+
+
+
+Visual inspection of the matching process looks pretty good; seems to catch most, but not all of what appear to be the same companies. For a publication I will use a more sophisticated methodology. The problem is it is unclear if when a farm has a close-ish name, but radically different address, if it is referring to the same farm (working in different locations/even states!) or a different operation entirely.
+
+Rather than having just numbers as the cluster_id, I want to have the actual farm name (a bit easier for checks/visualization)
+
+```{r}
+
+cluster_summary <- data.frame(cluster_id = clusters, EMPLOYER_NAME_CLEAN = df$EMPLOYER_NAME_CLEAN)
+
+# find first employer name in cluster
+first_emp <- cluster_summary %>%
+  group_by(cluster_id) %>%
+  summarise(first_emp_name = first(EMPLOYER_NAME_CLEAN[!is.na(EMPLOYER_NAME_CLEAN)]))
+
+# join first employer name back to df
+df <- df %>%
+  left_join(first_emp, by = "cluster_id") %>%
+  mutate(cluster_id = coalesce(first_emp_name, NA)) %>%
+  select(-first_emp_name)  
+
+#make sure NAs are consistent
+df$cluster_id[is.na(df$EMPLOYER_NAME_CLEAN)] <- NA
+
+```
+
+
+Now I do the same matching process for the "agent name"
+
+``` {r}
+
+#string distance
+agent_name_dist <- stringdistmatrix(df$AGENT_NAME_CLEAN, df$AGENT_NAME_CLEAN, method = "jw")
+agent_address_dist <- stringdistmatrix(df$AGENT_ADDRESS_CLEAN, df$AGENT_ADDRESS_CLEAN, method = "jw")
+
+replace_inf <- function(mat) {
+  mat[is.na(mat) | is.infinite(mat)] <- 1e6  
+  return(mat)
+}
+
+agent_name_dist <- replace_inf(agent_name_dist)
+agent_address_dist <- replace_inf(agent_address_dist)
+
+combined_dist <- (agent_name_dist + agent_address_dist)/2
+
+combined_dist <- replace_inf(combined_dist)
+
+#hierarichal clustering of combined distance
+hc <- hclust(as.dist(combined_dist), method = "average")
+
+#cut the tree to form clusters
+clusters <- cutree(hc, h = 0.2) 
+```
+
+
+```{r}
+# add the agent_id back to df
+df <- df %>%
+  mutate(agent_id = clusters)
+```
+
+Then again make the agent_id the actual name of the agent in the cluster
+```{r}
+
+cluster_summary <- data.frame(agent_id = clusters, AGENT_NAME_CLEAN = df$AGENT_NAME_CLEAN)
+
+first_agent <- cluster_summary %>%
+  group_by(agent_id) %>%
+  summarise(first_agent_name = first(AGENT_NAME_CLEAN[!is.na(AGENT_NAME_CLEAN)]))
+
+
+df <- df %>%
+  left_join(first_agent, by = "agent_id") %>%
+  mutate(agent_id = coalesce(first_agent_name, NA)) %>%
+  select(-first_agent_name)  
+
+df$agent_id[is.na(df$AGENT_NAME_CLEAN)] <- NA
+
+```
+
+Save the dataframe
+```{r}
+
+#write.csv(df, "cleaned_df.csv", row.names = FALSE)
+
+```
+
+
+### Create attributes dataframe
+
+First let's merge the geocoded data of worksite, agent, and employer addresses (from geocoding.Rmd)
+```{r}
+df <- read_csv("cleaned_df.csv")
+
+geocode_df <- read_csv("geocoded_clean.csv")
+
+```
+Make sure the "address" columns for employer, agent, and worksite are cleaned in the same way as the geocoding dataframe to make sure the merge works
+
+```{r}
+df <- df %>%
+  mutate(employer_address_trunc = paste(EMPLOYER_CITY, EMPLOYER_STATE, sep = ", ")) %>%
+  mutate(address_clean = clean(employer_address_trunc))
+
+df <- df %>%
+  mutate(worksite_address = paste(WORKSITE_CITY, WORKSITE_STATE, sep = ", ")) %>%
+  mutate(worksite_address_clean = clean(worksite_address))
+
+
+remove_words_with_numbers <- function(address) {
+  gsub("\\b\\S*\\d+\\S*\\b", "", address)
+}
+
+
+df$address_clean <- sapply(df$address_clean, remove_words_with_numbers)
+df$address_clean <- trimws(df$address_clean)
+
+
+df$worksite_address_clean <- sapply(df$worksite_address_clean, remove_words_with_numbers)
+
+
+df$worksite_address_clean <- trimws(df$worksite_address_clean)
+```
+
+
+Do the same thing with the geocode dataframe just to make sure everything is clean
+```{r}
+geocode_df$address_clean <- sapply(geocode_df$address_clean, remove_words_with_numbers)
+
+geocode_df$address_clean <- trimws(geocode_df$address_clean)
+
+```
+
+Just want distinct addresses
+```{r}
+geocode_df <- geocode_df %>%
+  distinct(address_clean, .keep_all = TRUE)
+
+```
+
+
+Merge the datasets with a leftjoin; transferring the long/lat coordinates to addresses for employers
+```{r}
+merged_df <- left_join(df, geocode_df, by = "address_clean")
+
+merged_df <- merged_df %>%
+  rename(employer_latitude = latitude, employer_longitude = longitude)
+
+```
+
+
+Do the same thing for agents and worksite locations
+```{r}
+merged_df <- left_join(merged_df, geocode_df, by = c("AGENT_ADDRESS_CLEAN" = "address_clean"))
+
+merged_df <- merged_df %>%
+  rename(agent_latitude = latitude, agent_longitude = longitude)
+
+
+merged_df <- left_join(merged_df, geocode_df, by = c("worksite_address_clean" = "address_clean"))
+
+merged_df <- merged_df %>%
+  rename(worksite_latitude = latitude, worksite_longitude = longitude)
+```
+
+
+
+### Now that the geocode locations are merged, let's make this tidy-er. 
+
+
+First select columns of interest
+```{r}
+cleaning <- merged_df %>%
+  select(CASE_NUMBER,`PRIMARY/SUB`, cluster_id, agent_id, EMPLOYER_STATE, employer_latitude, employer_longitude, AGENT_ATTORNEY_STATE, agent_latitude, agent_longitude, WORKSITE_STATE, worksite_latitude, worksite_longitude,
+          JOB_TITLE, PRIMARY_CROP, NBR_WORKERS_REQUESTED, BASIC_NUMBER_OF_HOURS, BASIC_RATE_OF_PAY, BASIC_UNIT_OF_PAY, SUPERVISE_OTHER_EMP, EDUCATION_LEVEL, EMP_EXPERIENCE_REQD, EMP_EXP_NUM_MONTHS, OTHER_WORKSITE_LOCATION, ORGANIZATION_FLAG)
+
+```
+
+
+Joint applications are formatted a bit weirdly in the dataframe; the worksite location should be the address of the employer of record, but instead they are given the addresses of their agent; fix this, and add a flag for joint_applications
+```{r}
+
+# find joint applications through duplicated case numbers
+duplicated_case_numbers <- cleaning$CASE_NUMBER[duplicated(cleaning$CASE_NUMBER)]
+
+cleaning <- cleaning %>%
+  mutate(worksite_latitude_adj = ifelse(CASE_NUMBER %in% duplicated_case_numbers, employer_latitude, worksite_latitude),
+         worksite_longitude_adj = ifelse(CASE_NUMBER %in% duplicated_case_numbers, employer_longitude, worksite_longitude),
+         labor_aggregator = ifelse((CASE_NUMBER %in% duplicated_case_numbers) & `PRIMARY/SUB` == "PRI", "Y", "N"),
+         joint_application = ifelse((CASE_NUMBER %in% duplicated_case_numbers) & `PRIMARY/SUB` == "SUB", 1, 0) )
+
+```
+
+
+Make sure joint applications are properly represented; if the organization is a joint employer (listed as "sub'), make sure their agent information corresponds to who is listed as the primary employer on their joint information (who function as an agent/labor contractor)
+```{r}
+cleaning <- cleaning %>%
+  group_by(CASE_NUMBER) %>%
+ mutate(
+    PRIMARY_AGENT_ID = if_else((CASE_NUMBER %in% duplicated_case_numbers) & `PRIMARY/SUB` == "PRI", cluster_id, NA_character_),
+    PRIMARY_AGENT_STATE= if_else((CASE_NUMBER %in% duplicated_case_numbers) &`PRIMARY/SUB` == "PRI", EMPLOYER_STATE, NA_character_),
+    PRIMARY_AGENT_LATITUDE = if_else((CASE_NUMBER %in% duplicated_case_numbers) &`PRIMARY/SUB` == "PRI", employer_latitude, NA_real_),
+    PRIMARY_AGENT_LONGITUDE = if_else((CASE_NUMBER %in% duplicated_case_numbers) &`PRIMARY/SUB` == "PRI", employer_longitude, NA_real_),
+    PRIMARY_ORGANIZATION_FLAG = if_else((CASE_NUMBER %in% duplicated_case_numbers) &`PRIMARY/SUB` == "PRI", ORGANIZATION_FLAG, NA_character_)
+  ) %>%
+  fill(
+    PRIMARY_AGENT_ID,
+    PRIMARY_AGENT_STATE,
+    PRIMARY_AGENT_LATITUDE,
+    PRIMARY_AGENT_LONGITUDE,
+    PRIMARY_ORGANIZATION_FLAG#,
+    #.direction = "updown"
+  ) %>%
+  # update the sub rows with the primary values
+  mutate(
+    agent_id = if_else(`PRIMARY/SUB` == "SUB", PRIMARY_AGENT_ID, agent_id),
+    AGENT_ATTORNEY_STATE = if_else(`PRIMARY/SUB` == "SUB", PRIMARY_AGENT_STATE, AGENT_ATTORNEY_STATE),
+    agent_latitude = if_else(`PRIMARY/SUB` == "SUB", PRIMARY_AGENT_LATITUDE, agent_latitude),
+    agent_longitude = if_else(`PRIMARY/SUB` == "SUB", PRIMARY_AGENT_LONGITUDE, agent_longitude),
+    ORGANIZATION_FLAG = if_else(`PRIMARY/SUB` == "SUB", PRIMARY_ORGANIZATION_FLAG, ORGANIZATION_FLAG)
+  ) %>%
+  # Drop temporary columns
+  select(-PRIMARY_AGENT_ID, -PRIMARY_AGENT_STATE, -PRIMARY_AGENT_LATITUDE, -PRIMARY_AGENT_LONGITUDE, -PRIMARY_ORGANIZATION_FLAG)
+
+
+
+
+
+```
+
+
+```{r}
+#write.csv(cleaning, "cleaned_df_geocoded.csv", row.names = FALSE)
+
+cleaning <- read_csv("cleaned_df_geocoded.csv")
+```
+#### Tidying
+
+
+Next we'll turn this dataset, which is unique on case_number but not on employer_name, tidy on both employers and agents.
+```{r}
+get_mode <- function(v) {
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+
+#Create a tidy dataframe for employers/farms
+
+tidy_employer <- cleaning %>%
+  group_by(cluster_id) %>%
+  summarize(
+    worksite_latitude_adj = get_mode(worksite_latitude_adj),
+    worksite_longitude_adj = get_mode(worksite_longitude_adj),
+    WORKSITE_STATE = get_mode(WORKSITE_STATE),
+    EMPLOYER_STATE = get_mode(EMPLOYER_STATE),
+    BASIC_NUMBER_OF_HOURS = mean(BASIC_NUMBER_OF_HOURS, na.rm = TRUE),
+    JOB_TITLE = get_mode(JOB_TITLE),
+    PRIMARY_CROP = get_mode(PRIMARY_CROP),
+    NBR_WORKERS_REQUESTED = sum(NBR_WORKERS_REQUESTED, na.rm = TRUE),
+    BASIC_RATE_OF_PAY = mean(BASIC_RATE_OF_PAY, na.rm = TRUE),
+    ORGANIZATION_FLAG = get_mode(ORGANIZATION_FLAG),
+    joint_application = sum(joint_application, na.rm = TRUE),
+    EMP_EXPERIENCE_REQD = get_mode(EMP_EXPERIENCE_REQD),
+    EMP_EXP_NUM_MONTHS = mean(EMP_EXP_NUM_MONTHS, na.rm = TRUE),
+    APPLICATION_COUNT = n_distinct(CASE_NUMBER),
+    .groups = 'drop'
+  ) %>%
+  mutate(class = "employer") %>%
+  rename(name = cluster_id)
+
+
+```
+
+```{r}
+
+#create a tidy dataframe for agents
+
+tidy_agents <- cleaning %>%
+  group_by(agent_id) %>%
+  summarize(
+    AGENT_ATTORNEY_STATE = get_mode(AGENT_ATTORNEY_STATE),
+    agent_latitude = get_mode(agent_latitude),
+    agent_longitude = get_mode(agent_longitude),
+    ORGANIZATION_FLAG = get_mode(ORGANIZATION_FLAG),
+    joint_application = sum(joint_application, na.rm = TRUE),
+    NBR_WORKERS_REQUESTED = sum(NBR_WORKERS_REQUESTED, na.rm = TRUE),
+    APPLICATION_COUNT = n_distinct(CASE_NUMBER),
+    .groups = 'drop') %>%
+  mutate(class = "agent")%>%
+  rename(name = agent_id)
+
+```
+
+```{r}
+#combine tidy dataframes into one large attribute df
+
+tidy_df <- bind_rows(tidy_employer, tidy_agents)
+```
+
+
+```{r}
+#clean up organization_flag a bit
+
+tidy_df <- tidy_df %>%
+  mutate(organization_type = case_when(
+    (class == "employer" & ORGANIZATION_FLAG == "Association - Joint Employer (H-2A Only)") ~ 'joint',
+    (class == "employer") & (ORGANIZATION_FLAG == "Individual Employer" | ORGANIZATION_FLAG == "Association - Filing as Agent (H-2A Only)")  ~ "individual farm", 
+    (class == "employer") & (ORGANIZATION_FLAG == "H-2A Labor Contractor or Job Contractor"|ORGANIZATION_FLAG == "Association - Sole Employer (H-2A Only)") ~ "labor contractor",
+    
+    
+    (class == "agent") & (ORGANIZATION_FLAG == "Association - Joint Employer (H-2A Only)" | ORGANIZATION_FLAG == "Association - Sole Employer (H-2A Only)" | ORGANIZATION_FLAG == "Association - Filing as Agent (H-2A Only)") ~ 'association',
+    (class == "agent" & ORGANIZATION_FLAG == "Individual Employer") ~ 'individual agent',
+    (class == "agent") & (ORGANIZATION_FLAG == "H-2A Labor Contractor or Job Contractor") ~ "labor contractor (agent)",
+    TRUE ~ NA
+    
+  ))
+
+```
+
+
+```{r}
+# make primary crops just the top 10 most frequent crops, the rest labeled "other"
+top_crops <- tidy_df %>%
+  count(PRIMARY_CROP) %>%
+  arrange(desc(n)) %>%
+  slice_head(n = 10) %>%
+  pull(PRIMARY_CROP)
+
+# create the crop_type column
+tidy_df <- tidy_df %>%
+  mutate(crop_type = if_else(PRIMARY_CROP %in% top_crops, PRIMARY_CROP, "other"))
+  
+
+
+```
+
+```{r}
+write.csv(tidy_df, "attributes.csv", row.names = FALSE)
+```
+
+
+## Create Adjacency Matrix
+
+
+```{r}
+df <- read_csv("cleaned_df_geocoded.csv")
+
+pri_cases <- df %>% filter(`PRIMARY/SUB` == 'PRI')
+sub_cases <- df %>% filter(`PRIMARY/SUB` == 'SUB')
+
+
+merged_cases <- sub_cases %>%
+  left_join(pri_cases, by = "CASE_NUMBER", suffix = c("_SUB", "_PRI"))
+
+new_dataframe <- merged_cases %>%
+  select(cluster_id_SUB, cluster_id_PRI) %>%
+  rename(cluster_id = cluster_id_SUB, agent_id = cluster_id_PRI)
+
+# add original matches of employer name and agent name to the new dataframe
+original_matches <- df %>%
+#  filter(!(CASE_NUMBER %in% merged_cases$CASE_NUMBER & `PRIMARY/SUB` == 'PRI' & is.na(agent_id))) %>%
+  filter(!(CASE_NUMBER %in% merged_cases$CASE_NUMBER & `PRIMARY/SUB` == 'SUB' & is.na(agent_id))) %>%
+  select(cluster_id, agent_id)
+
+# combine both dataframes
+final_dataframe <- bind_rows(original_matches, new_dataframe)
+
+
+``` 
+
+
+```{r}
+
+write.csv(final_dataframe, "pre_adj_matrix.csv", row.names = FALSE)
+
+```

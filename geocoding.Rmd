@@ -1,0 +1,121 @@
+---
+title: "geocoding"
+output: html_document
+date: "2024-07-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(dplyr)
+library(readr)
+library(readxl)
+library(tidygeocoder)
+```
+
+```{r}
+df <- read_csv("cleaned_df.csv")
+
+```
+
+
+
+```{r}
+
+clean <- function(a_string) {
+  ifelse(is.na(a_string), NA, {
+    a_string %>%
+      tolower() %>%
+      str_remove_all("[[:punct:]]") %>%
+      str_squish() %>%
+      iconv(to = "ASCII//TRANSLIT") %>%
+      str_replace_all("\\binc\\b|\\bllc\\b", "")
+  })
+}
+
+df <- df %>%
+  mutate(employer_address_trunc = paste(EMPLOYER_CITY, EMPLOYER_STATE, EMPLOYER_POSTAL_CODE, sep = ", ")) %>%
+  mutate(address_clean = clean(employer_address_trunc))
+
+df <- df %>%
+  mutate(worksite_address = paste(WORKSITE_CITY, WORKSITE_STATE, sep = ", ")) %>%
+  mutate(worksite_address_clean = clean(worksite_address))
+
+addresses_emp <- df %>%
+  select(address_clean) %>%
+  distinct(address_clean)
+
+addresses_agent <- df %>%
+  select(AGENT_ADDRESS_CLEAN)  %>%
+  distinct(AGENT_ADDRESS_CLEAN) %>%
+  rename(address_clean = AGENT_ADDRESS_CLEAN)
+
+addresses_worksite <- df %>%
+  select(worksite_address_clean) %>%
+  distinct(worksite_address_clean)%>%
+  rename(address_clean = worksite_address_clean)
+
+geocode_df <- bind_rows(addresses_emp, addresses_agent, addresses_worksite)
+
+
+```
+
+
+```{r}
+
+
+lat_longs <- geocode_df %>%
+  geocode(address_clean, method = 'osm', lat = latitude , long = longitude)
+```
+
+
+
+
+
+
+
+```{r}
+
+missing_geocode <- lat_longs %>%
+  filter(is.na(longitude) | is.na(latitude))
+
+
+geocode_clean <- lat_longs %>%
+  filter(!is.na(longitude) & !is.na(latitude))
+
+```
+
+```{r}
+remove_words_with_numbers <- function(address) {
+  gsub("\\b\\S*\\d+\\S*\\b", "", address)
+}
+
+
+missing_geocode$address_clean <- sapply(missing_geocode$address_clean, remove_words_with_numbers)
+
+
+missing_geocode$address_clean <- trimws(missing_geocode$address_clean)
+
+```
+
+
+```{r}
+
+lat_longs_missing <- missing_geocode %>%
+  select(address_clean) %>%
+  geocode(address_clean, method = 'osm', lat = latitude , long = longitude)
+
+```
+
+```{r}
+
+final_df <- bind_rows(geocode_clean, lat_longs_missing)
+
+```
+
+
+```{r}
+write.csv(final_df, "geocoded_clean.csv", row.names = FALSE)
+
+```
