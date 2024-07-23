@@ -457,7 +457,20 @@ head(df)</code></pre>
 cluster_id (representing the employer) with the number of applications
 the employer made corresponding to the number of duplicate cluster_ids,
 and the agent_id corresponding to the agent listed for each application
-the employer made.</p>
+the employer made. This is an administrative dataset based on user-entry
+of applications, so unfortunately there are a lot of typos and
+inconsistencies in the spelling of names and addresses. Sometimes there
+is an additional “and”, or “street” vs “st” or random abbreviations and
+suffixes. To accurately capture if the application is referring to a
+unique or duplicate farm/agent, I use some basic matching algorithms
+(see data-cleaning.RMD).</p>
+<p>Specifically, I use the average of the string distance for both the
+employer name and the employer address. This is because there are quite
+a few applications where the employer name is quite distinct in terms of
+string distance (“Washington Farm Association” vs WA Farm ASC”), but
+have the same addresses. It seems clear that these are referring to the
+same employer, so the average measure between these two variables seems
+like a good way to uniquely identify.</p>
 <p>Next let’s load in the attributes table</p>
 <pre class="r"><code>head(attributes)</code></pre>
 <pre><code>##                   name worksite_latitude_adj worksite_longitude_adj
@@ -537,9 +550,9 @@ tie between farm and agent.</p>
 <pre class="r"><code>#Create network object
 net &lt;- graph_from_biadjacency_matrix(adj_matrix, mode = &quot;all&quot;, weighted = TRUE)</code></pre>
 <pre class="r"><code>net</code></pre>
-<pre><code>## IGRAPH d451759 UNWB 6998 6572 -- 
+<pre><code>## IGRAPH 8482f7c UNWB 6998 6572 -- 
 ## + attr: type (v/l), name (v/c), weight (e/n)
-## + edges from d451759 (vertex names):
+## + edges from 8482f7c (vertex names):
 ## [1] 15 black            --agri placements international                 
 ## [2] 20 mile sheep       --mountain plains ag service                    
 ## [3] 20 mile sheep       --western range association                     
@@ -594,9 +607,9 @@ affiliation network, and then compare features to the bipartite.</p>
 onemode &lt;- bipartite_projection(net)
 farm_farm &lt;- onemode$proj1</code></pre>
 <pre class="r"><code>farm_farm</code></pre>
-<pre><code>## IGRAPH d4a103a UNW- 6797 858649 -- 
+<pre><code>## IGRAPH 84c88fe UNW- 6797 858649 -- 
 ## + attr: name (v/c), weight (e/n)
-## + edges from d4a103a (vertex names):
+## + edges from 84c88fe (vertex names):
 ##  [1] 15 black--adee honey farms       15 black--ag                    
 ##  [3] 15 black--akot farms jv          15 black--alan m aughenbaugh    
 ##  [5] 15 black--american sprayers      15 black--anderson farms        
@@ -630,10 +643,13 @@ head(deg_data %&gt;%
 ## cartner brothers   55579.31
 ## anderson farms     54602.22</code></pre>
 <p>Looks like triple b farms, triple r farms, and triple c farms all
-among the most central (they have to be the same employer, right?). An
-inspection of the dataframe shows that these farms used 3-4 different
-agents in FY2016, all of which were among the largest/most connected
-agents.</p>
+among the most central (they have to be the same employer, right?).
+However, even after the matching process, triple b, r, c (and a/d) farms
+all had quite unique addresses - maybe this is just a common naming
+convention for farms?</p>
+<p>An inspection of the dataframe shows that these farms used 3-4
+different agents in FY2016, all of which were among the largest/most
+connected agents.</p>
 <p>Let’s look at the least connected edges next:</p>
 <pre class="r"><code>head(deg_data %&gt;%
   arrange(-desc(deg_scaled)))</code></pre>
@@ -952,24 +968,20 @@ degeneracy.</p>
 ## falling back to &#39;lpSolveAPI&#39;. This should be fine unless the sample size and/or
 ## the number of parameters is very big.</code></pre>
 <pre><code>## Optimizing with step length 1.0000.</code></pre>
-<pre><code>## The log-likelihood improved by 0.0392.</code></pre>
-<pre><code>## Convergence test p-value: 0.6804. Not converged with 99% confidence; increasing sample size.
+<pre><code>## The log-likelihood improved by 0.0263.</code></pre>
+<pre><code>## Convergence test p-value: 0.6439. Not converged with 99% confidence; increasing sample size.
 ## Iteration 2 of at most 60:
 ## Optimizing with step length 1.0000.
-## The log-likelihood improved by 0.0250.
-## Convergence test p-value: 0.5916. Not converged with 99% confidence; increasing sample size.
+## The log-likelihood improved by 0.0730.
+## Convergence test p-value: 0.3970. Not converged with 99% confidence; increasing sample size.
 ## Iteration 3 of at most 60:
 ## Optimizing with step length 1.0000.
-## The log-likelihood improved by 0.0327.
-## Convergence test p-value: 0.0206. Not converged with 99% confidence; increasing sample size.
+## The log-likelihood improved by 0.0015.
+## Convergence test p-value: 0.1552. Not converged with 99% confidence; increasing sample size.
 ## Iteration 4 of at most 60:
 ## Optimizing with step length 1.0000.
-## The log-likelihood improved by 0.0233.
-## Convergence test p-value: 0.1267. Not converged with 99% confidence; increasing sample size.
-## Iteration 5 of at most 60:
-## Optimizing with step length 1.0000.
-## The log-likelihood improved by 0.0058.
-## Convergence test p-value: 0.0001. Converged with 99% confidence.
+## The log-likelihood improved by 0.0032.
+## Convergence test p-value: 0.0020. Converged with 99% confidence.
 ## Finished MCMLE.
 ## Evaluating log-likelihood at the estimate. Fitting the dyad-independent submodel...
 ## Bridging between the dyad-independent submodel and the full model...
@@ -988,10 +1000,10 @@ degeneracy.</p>
 ## Monte Carlo Maximum Likelihood Results:
 ## 
 ##                                              Estimate Std. Error MCMC % z value
-## edges                                        -4.81024    0.02498      0 -192.55
-## b2factor.agent_type.association               1.27286    0.03593      0   35.43
-## b2factor.agent_type.labor contractor (agent) -1.56073    0.06718      0  -23.23
-## b2nodematch.agent_type                       -3.57718    0.11169      0  -32.03
+## edges                                        -4.81129    0.02450      0 -196.35
+## b2factor.agent_type.association               1.27651    0.03604      0   35.42
+## b2factor.agent_type.labor contractor (agent) -1.56659    0.06733      0  -23.27
+## b2nodematch.agent_type                       -3.58073    0.11038      0  -32.44
 ##                                              Pr(&gt;|z|)    
 ## edges                                          &lt;1e-04 ***
 ## b2factor.agent_type.association                &lt;1e-04 ***
@@ -1001,9 +1013,9 @@ degeneracy.</p>
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ##      Null Deviance: 1893951  on 1366197  degrees of freedom
-##  Residual Deviance:   76394  on 1366193  degrees of freedom
+##  Residual Deviance:   76408  on 1366193  degrees of freedom
 ##  
-## AIC: 76402  BIC: 76451  (Smaller is better. MC Std. Err. = 5.033)</code></pre>
+## AIC: 76416  BIC: 76464  (Smaller is better. MC Std. Err. = 7.416)</code></pre>
 <p>The b2nodematch term has a significant (and large) negative
 coefficient, indicating that farms who work with one type of agent are
 unlikely to match with other agents of the same type. This makes some
@@ -1048,35 +1060,35 @@ likelihood estimates do a fairly good job (and MCMC takes forever).</p>
 ## Maximum Pseudolikelihood Results:
 ## 
 ##                                                    Estimate Std. Error MCMC %
-## edges                                              -9.13504    0.68084      0
-## b2factor.agent_type.association                    -0.46669    0.07994      0
-## b2factor.agent_type.labor contractor (agent)       -1.19679    0.08538      0
-## b2nodematch.agent_type                             -4.31283    0.16817      0
-## b1factor.crop_type.Agricultural Equipment Operator  2.86093    0.12360      0
-## b1factor.crop_type.Apples                           2.77672    0.24255      0
-## b1factor.crop_type.Corn                             3.55671    0.19347      0
-## b1factor.crop_type.Crawfish                         4.39237    0.30801      0
-## b1factor.crop_type.General Farmworker               2.75786    0.20083      0
-## b1factor.crop_type.Hay and Straw                    0.96222    0.12527      0
-## b1factor.crop_type.Nursery and Greenhouse Workers   2.59008    0.09474      0
-## b1factor.crop_type.Sheep                            2.39189    0.23578      0
-## b1factor.crop_type.Tobacco                          1.54028    0.15741      0
-## b1nodematch.crop_type                               3.30933    0.52887      0
+## edges                                              -9.13504    0.73459      0
+## b2factor.agent_type.association                    -0.46669    0.06432      0
+## b2factor.agent_type.labor contractor (agent)       -1.19679    0.12838      0
+## b2nodematch.agent_type                             -4.31283    0.15236      0
+## b1factor.crop_type.Agricultural Equipment Operator  2.86093    0.12216      0
+## b1factor.crop_type.Apples                           2.77672    0.16614      0
+## b1factor.crop_type.Corn                             3.55671    0.22995      0
+## b1factor.crop_type.Crawfish                         4.39237    0.34551      0
+## b1factor.crop_type.General Farmworker               2.75786    0.21127      0
+## b1factor.crop_type.Hay and Straw                    0.96222    0.12620      0
+## b1factor.crop_type.Nursery and Greenhouse Workers   2.59008    0.13405      0
+## b1factor.crop_type.Sheep                            2.39189    0.24602      0
+## b1factor.crop_type.Tobacco                          1.54028    0.20777      0
+## b1nodematch.crop_type                               3.30933    0.55279      0
 ##                                                    z value Pr(&gt;|z|)    
-## edges                                              -13.417   &lt;1e-04 ***
-## b2factor.agent_type.association                     -5.838   &lt;1e-04 ***
-## b2factor.agent_type.labor contractor (agent)       -14.017   &lt;1e-04 ***
-## b2nodematch.agent_type                             -25.645   &lt;1e-04 ***
-## b1factor.crop_type.Agricultural Equipment Operator  23.147   &lt;1e-04 ***
-## b1factor.crop_type.Apples                           11.448   &lt;1e-04 ***
-## b1factor.crop_type.Corn                             18.384   &lt;1e-04 ***
-## b1factor.crop_type.Crawfish                         14.260   &lt;1e-04 ***
-## b1factor.crop_type.General Farmworker               13.732   &lt;1e-04 ***
-## b1factor.crop_type.Hay and Straw                     7.681   &lt;1e-04 ***
-## b1factor.crop_type.Nursery and Greenhouse Workers   27.339   &lt;1e-04 ***
-## b1factor.crop_type.Sheep                            10.144   &lt;1e-04 ***
-## b1factor.crop_type.Tobacco                           9.785   &lt;1e-04 ***
-## b1nodematch.crop_type                                6.257   &lt;1e-04 ***
+## edges                                              -12.436   &lt;1e-04 ***
+## b2factor.agent_type.association                     -7.256   &lt;1e-04 ***
+## b2factor.agent_type.labor contractor (agent)        -9.322   &lt;1e-04 ***
+## b2nodematch.agent_type                             -28.306   &lt;1e-04 ***
+## b1factor.crop_type.Agricultural Equipment Operator  23.419   &lt;1e-04 ***
+## b1factor.crop_type.Apples                           16.713   &lt;1e-04 ***
+## b1factor.crop_type.Corn                             15.467   &lt;1e-04 ***
+## b1factor.crop_type.Crawfish                         12.713   &lt;1e-04 ***
+## b1factor.crop_type.General Farmworker               13.054   &lt;1e-04 ***
+## b1factor.crop_type.Hay and Straw                     7.625   &lt;1e-04 ***
+## b1factor.crop_type.Nursery and Greenhouse Workers   19.321   &lt;1e-04 ***
+## b1factor.crop_type.Sheep                             9.722   &lt;1e-04 ***
+## b1factor.crop_type.Tobacco                           7.413   &lt;1e-04 ***
+## b1nodematch.crop_type                                5.987   &lt;1e-04 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
