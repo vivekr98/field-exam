@@ -537,9 +537,9 @@ tie between farm and agent.</p>
 <pre class="r"><code>#Create network object
 net &lt;- graph_from_biadjacency_matrix(adj_matrix, mode = &quot;all&quot;, weighted = TRUE)</code></pre>
 <pre class="r"><code>net</code></pre>
-<pre><code>## IGRAPH 9f2b66f UNWB 6998 6572 -- 
+<pre><code>## IGRAPH d451759 UNWB 6998 6572 -- 
 ## + attr: type (v/l), name (v/c), weight (e/n)
-## + edges from 9f2b66f (vertex names):
+## + edges from d451759 (vertex names):
 ## [1] 15 black            --agri placements international                 
 ## [2] 20 mile sheep       --mountain plains ag service                    
 ## [3] 20 mile sheep       --western range association                     
@@ -594,9 +594,9 @@ affiliation network, and then compare features to the bipartite.</p>
 onemode &lt;- bipartite_projection(net)
 farm_farm &lt;- onemode$proj1</code></pre>
 <pre class="r"><code>farm_farm</code></pre>
-<pre><code>## IGRAPH 9f47f88 UNW- 6797 858649 -- 
+<pre><code>## IGRAPH d4a103a UNW- 6797 858649 -- 
 ## + attr: name (v/c), weight (e/n)
-## + edges from 9f47f88 (vertex names):
+## + edges from d4a103a (vertex names):
 ##  [1] 15 black--adee honey farms       15 black--ag                    
 ##  [3] 15 black--akot farms jv          15 black--alan m aughenbaugh    
 ##  [5] 15 black--american sprayers      15 black--anderson farms        
@@ -952,32 +952,24 @@ degeneracy.</p>
 ## falling back to &#39;lpSolveAPI&#39;. This should be fine unless the sample size and/or
 ## the number of parameters is very big.</code></pre>
 <pre><code>## Optimizing with step length 1.0000.</code></pre>
-<pre><code>## The log-likelihood improved by 0.0439.</code></pre>
-<pre><code>## Convergence test p-value: 0.4773. Not converged with 99% confidence; increasing sample size.
+<pre><code>## The log-likelihood improved by 0.0392.</code></pre>
+<pre><code>## Convergence test p-value: 0.6804. Not converged with 99% confidence; increasing sample size.
 ## Iteration 2 of at most 60:
 ## Optimizing with step length 1.0000.
-## The log-likelihood improved by 0.0247.
-## Convergence test p-value: 0.2545. Not converged with 99% confidence; increasing sample size.
+## The log-likelihood improved by 0.0250.
+## Convergence test p-value: 0.5916. Not converged with 99% confidence; increasing sample size.
 ## Iteration 3 of at most 60:
 ## Optimizing with step length 1.0000.
-## The log-likelihood improved by 0.0052.
-## Convergence test p-value: 0.1140. Not converged with 99% confidence; increasing sample size.
+## The log-likelihood improved by 0.0327.
+## Convergence test p-value: 0.0206. Not converged with 99% confidence; increasing sample size.
 ## Iteration 4 of at most 60:
 ## Optimizing with step length 1.0000.
-## The log-likelihood improved by 0.0205.
-## Convergence test p-value: 0.0100. Not converged with 99% confidence; increasing sample size.
+## The log-likelihood improved by 0.0233.
+## Convergence test p-value: 0.1267. Not converged with 99% confidence; increasing sample size.
 ## Iteration 5 of at most 60:
 ## Optimizing with step length 1.0000.
-## The log-likelihood improved by 0.0142.
-## Convergence test p-value: 0.0127. Not converged with 99% confidence; increasing sample size.
-## Iteration 6 of at most 60:
-## Optimizing with step length 1.0000.
-## The log-likelihood improved by 0.0097.
-## Convergence test p-value: 0.0111. Not converged with 99% confidence; increasing sample size.
-## Iteration 7 of at most 60:
-## Optimizing with step length 1.0000.
-## The log-likelihood improved by 0.0071.
-## Convergence test p-value: 0.0004. Converged with 99% confidence.
+## The log-likelihood improved by 0.0058.
+## Convergence test p-value: 0.0001. Converged with 99% confidence.
 ## Finished MCMLE.
 ## Evaluating log-likelihood at the estimate. Fitting the dyad-independent submodel...
 ## Bridging between the dyad-independent submodel and the full model...
@@ -996,10 +988,10 @@ degeneracy.</p>
 ## Monte Carlo Maximum Likelihood Results:
 ## 
 ##                                              Estimate Std. Error MCMC % z value
-## edges                                        -4.80987    0.02448      0 -196.46
-## b2factor.agent_type.association               1.27780    0.03551      0   35.99
-## b2factor.agent_type.labor contractor (agent) -1.56936    0.06855      0  -22.89
-## b2nodematch.agent_type                       -3.58629    0.11377      0  -31.52
+## edges                                        -4.81024    0.02498      0 -192.55
+## b2factor.agent_type.association               1.27286    0.03593      0   35.43
+## b2factor.agent_type.labor contractor (agent) -1.56073    0.06718      0  -23.23
+## b2nodematch.agent_type                       -3.57718    0.11169      0  -32.03
 ##                                              Pr(&gt;|z|)    
 ## edges                                          &lt;1e-04 ***
 ## b2factor.agent_type.association                &lt;1e-04 ***
@@ -1009,9 +1001,9 @@ degeneracy.</p>
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ##      Null Deviance: 1893951  on 1366197  degrees of freedom
-##  Residual Deviance:   76416  on 1366193  degrees of freedom
+##  Residual Deviance:   76394  on 1366193  degrees of freedom
 ##  
-## AIC: 76424  BIC: 76473  (Smaller is better. MC Std. Err. = 5.861)</code></pre>
+## AIC: 76402  BIC: 76451  (Smaller is better. MC Std. Err. = 5.033)</code></pre>
 <p>The b2nodematch term has a significant (and large) negative
 coefficient, indicating that farms who work with one type of agent are
 unlikely to match with other agents of the same type. This makes some
@@ -1056,35 +1048,35 @@ likelihood estimates do a fairly good job (and MCMC takes forever).</p>
 ## Maximum Pseudolikelihood Results:
 ## 
 ##                                                    Estimate Std. Error MCMC %
-## edges                                              -9.13504    0.57651      0
-## b2factor.agent_type.association                    -0.46669    0.08406      0
-## b2factor.agent_type.labor contractor (agent)       -1.19679    0.09818      0
-## b2nodematch.agent_type                             -4.31283    0.16262      0
-## b1factor.crop_type.Agricultural Equipment Operator  2.86093    0.11917      0
-## b1factor.crop_type.Apples                           2.77672    0.16297      0
-## b1factor.crop_type.Corn                             3.55671    0.23028      0
-## b1factor.crop_type.Crawfish                         4.39237    0.42811      0
-## b1factor.crop_type.General Farmworker               2.75786    0.24171      0
-## b1factor.crop_type.Hay and Straw                    0.96222    0.12613      0
-## b1factor.crop_type.Nursery and Greenhouse Workers   2.59008    0.07966      0
-## b1factor.crop_type.Sheep                            2.39189    0.22019      0
-## b1factor.crop_type.Tobacco                          1.54028    0.21434      0
-## b1nodematch.crop_type                               3.30933    0.47120      0
+## edges                                              -9.13504    0.68084      0
+## b2factor.agent_type.association                    -0.46669    0.07994      0
+## b2factor.agent_type.labor contractor (agent)       -1.19679    0.08538      0
+## b2nodematch.agent_type                             -4.31283    0.16817      0
+## b1factor.crop_type.Agricultural Equipment Operator  2.86093    0.12360      0
+## b1factor.crop_type.Apples                           2.77672    0.24255      0
+## b1factor.crop_type.Corn                             3.55671    0.19347      0
+## b1factor.crop_type.Crawfish                         4.39237    0.30801      0
+## b1factor.crop_type.General Farmworker               2.75786    0.20083      0
+## b1factor.crop_type.Hay and Straw                    0.96222    0.12527      0
+## b1factor.crop_type.Nursery and Greenhouse Workers   2.59008    0.09474      0
+## b1factor.crop_type.Sheep                            2.39189    0.23578      0
+## b1factor.crop_type.Tobacco                          1.54028    0.15741      0
+## b1nodematch.crop_type                               3.30933    0.52887      0
 ##                                                    z value Pr(&gt;|z|)    
-## edges                                              -15.845   &lt;1e-04 ***
-## b2factor.agent_type.association                     -5.552   &lt;1e-04 ***
-## b2factor.agent_type.labor contractor (agent)       -12.190   &lt;1e-04 ***
-## b2nodematch.agent_type                             -26.522   &lt;1e-04 ***
-## b1factor.crop_type.Agricultural Equipment Operator  24.007   &lt;1e-04 ***
-## b1factor.crop_type.Apples                           17.039   &lt;1e-04 ***
-## b1factor.crop_type.Corn                             15.445   &lt;1e-04 ***
-## b1factor.crop_type.Crawfish                         10.260   &lt;1e-04 ***
-## b1factor.crop_type.General Farmworker               11.410   &lt;1e-04 ***
-## b1factor.crop_type.Hay and Straw                     7.629   &lt;1e-04 ***
-## b1factor.crop_type.Nursery and Greenhouse Workers   32.514   &lt;1e-04 ***
-## b1factor.crop_type.Sheep                            10.863   &lt;1e-04 ***
-## b1factor.crop_type.Tobacco                           7.186   &lt;1e-04 ***
-## b1nodematch.crop_type                                7.023   &lt;1e-04 ***
+## edges                                              -13.417   &lt;1e-04 ***
+## b2factor.agent_type.association                     -5.838   &lt;1e-04 ***
+## b2factor.agent_type.labor contractor (agent)       -14.017   &lt;1e-04 ***
+## b2nodematch.agent_type                             -25.645   &lt;1e-04 ***
+## b1factor.crop_type.Agricultural Equipment Operator  23.147   &lt;1e-04 ***
+## b1factor.crop_type.Apples                           11.448   &lt;1e-04 ***
+## b1factor.crop_type.Corn                             18.384   &lt;1e-04 ***
+## b1factor.crop_type.Crawfish                         14.260   &lt;1e-04 ***
+## b1factor.crop_type.General Farmworker               13.732   &lt;1e-04 ***
+## b1factor.crop_type.Hay and Straw                     7.681   &lt;1e-04 ***
+## b1factor.crop_type.Nursery and Greenhouse Workers   27.339   &lt;1e-04 ***
+## b1factor.crop_type.Sheep                            10.144   &lt;1e-04 ***
+## b1factor.crop_type.Tobacco                           9.785   &lt;1e-04 ***
+## b1nodematch.crop_type                                6.257   &lt;1e-04 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
@@ -1792,17 +1784,166 @@ model; including geographic distance, the number of workers a farm
 requested (farm size), experience level, and whether it was a joint
 employer, to see if we can identify more attributes that contribute to
 tie probability</p>
-<pre class="r"><code>#model5_simplified &lt;- ergm(net ~ edges +
-#                 b2factor(&quot;agent_type&quot;, levels = -2) + 
-#                 b2nodematch(&quot;agent_type&quot;, beta = 0.25) +
-#                 b1factor(&quot;crop_type&quot;, levels = -8) +  
-#                 b1nodematch(&quot;crop_type&quot;, beta = 0.25) +
-#                 b1nodematch(&quot;EMP_EXPERIENCE_REQD&quot;) +
-#                 b1cov(&quot;NBR_WORKERS_REQUESTED&quot;) +
-#                 edgecov(dist_matrix_scaled),
-#                estimate = &quot;MPLE&quot;,
-#                control = control.ergm(MPLE.covariance.method=&#39;Godambe&#39;))</code></pre>
-<pre class="r"><code>#summary(model5)</code></pre>
+<pre class="r"><code>model5_simplified &lt;- ergm(net ~ edges +
+                
+                 b2nodematch(&quot;agent_type&quot;, beta = 0.25) +
+                 b1factor(&quot;crop_type&quot;, levels = -8) +  
+                 b1nodematch(&quot;crop_type&quot;, beta = 0.25) +
+                 b1nodematch(&quot;EMP_EXPERIENCE_REQD&quot;) +
+                 b1cov(&quot;NBR_WORKERS_REQUESTED&quot;) +
+                 edgecov(dist_matrix_scaled)*b2factor(&quot;agent_type&quot;, levels = -2),
+              estimate = &quot;MPLE&quot;,
+              control = control.ergm(
+                MCMLE.maxit = 0,  
+                                  MPLE.maxit = 25,  
+                                  parallel = 2,
+                                  parallel.type = &quot;PSOCK&quot;))</code></pre>
+<pre><code>## Starting maximum pseudolikelihood estimation (MPLE):</code></pre>
+<pre><code>## Obtaining the responsible dyads.</code></pre>
+<pre><code>## Evaluating the predictor and response matrix.</code></pre>
+<pre><code>## Maximizing the pseudolikelihood.</code></pre>
+<pre><code>## Finished MPLE.</code></pre>
+<pre><code>## Evaluating log-likelihood at the estimate.</code></pre>
+<pre class="r"><code>summary(model5_simplified)</code></pre>
+<pre><code>## Call:
+## ergm(formula = net ~ edges + b2nodematch(&quot;agent_type&quot;, beta = 0.25) + 
+##     b1factor(&quot;crop_type&quot;, levels = -8) + b1nodematch(&quot;crop_type&quot;, 
+##     beta = 0.25) + b1nodematch(&quot;EMP_EXPERIENCE_REQD&quot;) + b1cov(&quot;NBR_WORKERS_REQUESTED&quot;) + 
+##     edgecov(dist_matrix_scaled) * b2factor(&quot;agent_type&quot;, levels = -2), 
+##     estimate = &quot;MPLE&quot;, control = control.ergm(MCMLE.maxit = 0, 
+##         MPLE.maxit = 25, parallel = 2, parallel.type = &quot;PSOCK&quot;))
+## 
+## Maximum Pseudolikelihood Results:
+## 
+##                                                                           Estimate
+## edges                                                                   -8.913e+00
+## b2nodematch.agent_type                                                  -4.306e+00
+## b1factor.crop_type.Agricultural Equipment Operator                       2.774e+00
+## b1factor.crop_type.Apples                                                2.724e+00
+## b1factor.crop_type.Corn                                                  3.505e+00
+## b1factor.crop_type.Crawfish                                              4.330e+00
+## b1factor.crop_type.General Farmworker                                    2.715e+00
+## b1factor.crop_type.Hay and Straw                                         8.412e-01
+## b1factor.crop_type.Nursery and Greenhouse Workers                        2.548e+00
+## b1factor.crop_type.Sheep                                                 2.357e+00
+## b1factor.crop_type.Tobacco                                               1.525e+00
+## b1nodematch.crop_type                                                    3.153e+00
+## b1nodematch.EMP_EXPERIENCE_REQD                                          8.969e-04
+## b1cov.NBR_WORKERS_REQUESTED                                             -8.000e-04
+## edgecov.dist_matrix_scaled                                              -5.995e-01
+## b2factor.agent_type.association                                         -6.120e-01
+## b2factor.agent_type.labor contractor (agent)                            -1.053e+00
+## edgecov.dist_matrix_scaled:b2factor.agent_type.association               4.805e-01
+## edgecov.dist_matrix_scaled:b2factor.agent_type.labor contractor (agent) -2.118e+00
+##                                                                         Std. Error
+## edges                                                                    5.691e-02
+## b2nodematch.agent_type                                                   7.944e-02
+## b1factor.crop_type.Agricultural Equipment Operator                       5.533e-02
+## b1factor.crop_type.Apples                                                8.608e-02
+## b1factor.crop_type.Corn                                                  8.149e-02
+## b1factor.crop_type.Crawfish                                              9.890e-02
+## b1factor.crop_type.General Farmworker                                    7.323e-02
+## b1factor.crop_type.Hay and Straw                                         5.388e-02
+## b1factor.crop_type.Nursery and Greenhouse Workers                        6.447e-02
+## b1factor.crop_type.Sheep                                                 6.666e-02
+## b1factor.crop_type.Tobacco                                               5.969e-02
+## b1nodematch.crop_type                                                    2.852e-02
+## b1nodematch.EMP_EXPERIENCE_REQD                                          8.857e-05
+## b1cov.NBR_WORKERS_REQUESTED                                              1.530e-04
+## edgecov.dist_matrix_scaled                                               3.706e-01
+## b2factor.agent_type.association                                          4.707e-02
+## b2factor.agent_type.labor contractor (agent)                             1.286e-01
+## edgecov.dist_matrix_scaled:b2factor.agent_type.association               4.279e-01
+## edgecov.dist_matrix_scaled:b2factor.agent_type.labor contractor (agent)  1.788e+00
+##                                                                         MCMC %
+## edges                                                                        0
+## b2nodematch.agent_type                                                       0
+## b1factor.crop_type.Agricultural Equipment Operator                           0
+## b1factor.crop_type.Apples                                                    0
+## b1factor.crop_type.Corn                                                      0
+## b1factor.crop_type.Crawfish                                                  0
+## b1factor.crop_type.General Farmworker                                        0
+## b1factor.crop_type.Hay and Straw                                             0
+## b1factor.crop_type.Nursery and Greenhouse Workers                            0
+## b1factor.crop_type.Sheep                                                     0
+## b1factor.crop_type.Tobacco                                                   0
+## b1nodematch.crop_type                                                        0
+## b1nodematch.EMP_EXPERIENCE_REQD                                              0
+## b1cov.NBR_WORKERS_REQUESTED                                                  0
+## edgecov.dist_matrix_scaled                                                   0
+## b2factor.agent_type.association                                              0
+## b2factor.agent_type.labor contractor (agent)                                 0
+## edgecov.dist_matrix_scaled:b2factor.agent_type.association                   0
+## edgecov.dist_matrix_scaled:b2factor.agent_type.labor contractor (agent)      0
+##                                                                          z value
+## edges                                                                   -156.617
+## b2nodematch.agent_type                                                   -54.198
+## b1factor.crop_type.Agricultural Equipment Operator                        50.136
+## b1factor.crop_type.Apples                                                 31.646
+## b1factor.crop_type.Corn                                                   43.006
+## b1factor.crop_type.Crawfish                                               43.785
+## b1factor.crop_type.General Farmworker                                     37.074
+## b1factor.crop_type.Hay and Straw                                          15.613
+## b1factor.crop_type.Nursery and Greenhouse Workers                         39.518
+## b1factor.crop_type.Sheep                                                  35.353
+## b1factor.crop_type.Tobacco                                                25.540
+## b1nodematch.crop_type                                                    110.545
+## b1nodematch.EMP_EXPERIENCE_REQD                                           10.127
+## b1cov.NBR_WORKERS_REQUESTED                                               -5.227
+## edgecov.dist_matrix_scaled                                                -1.618
+## b2factor.agent_type.association                                          -13.003
+## b2factor.agent_type.labor contractor (agent)                              -8.189
+## edgecov.dist_matrix_scaled:b2factor.agent_type.association                 1.123
+## edgecov.dist_matrix_scaled:b2factor.agent_type.labor contractor (agent)   -1.184
+##                                                                         Pr(&gt;|z|)
+## edges                                                                     &lt;1e-04
+## b2nodematch.agent_type                                                    &lt;1e-04
+## b1factor.crop_type.Agricultural Equipment Operator                        &lt;1e-04
+## b1factor.crop_type.Apples                                                 &lt;1e-04
+## b1factor.crop_type.Corn                                                   &lt;1e-04
+## b1factor.crop_type.Crawfish                                               &lt;1e-04
+## b1factor.crop_type.General Farmworker                                     &lt;1e-04
+## b1factor.crop_type.Hay and Straw                                          &lt;1e-04
+## b1factor.crop_type.Nursery and Greenhouse Workers                         &lt;1e-04
+## b1factor.crop_type.Sheep                                                  &lt;1e-04
+## b1factor.crop_type.Tobacco                                                &lt;1e-04
+## b1nodematch.crop_type                                                     &lt;1e-04
+## b1nodematch.EMP_EXPERIENCE_REQD                                           &lt;1e-04
+## b1cov.NBR_WORKERS_REQUESTED                                               &lt;1e-04
+## edgecov.dist_matrix_scaled                                                 0.106
+## b2factor.agent_type.association                                           &lt;1e-04
+## b2factor.agent_type.labor contractor (agent)                              &lt;1e-04
+## edgecov.dist_matrix_scaled:b2factor.agent_type.association                 0.261
+## edgecov.dist_matrix_scaled:b2factor.agent_type.labor contractor (agent)    0.236
+##                                                                            
+## edges                                                                   ***
+## b2nodematch.agent_type                                                  ***
+## b1factor.crop_type.Agricultural Equipment Operator                      ***
+## b1factor.crop_type.Apples                                               ***
+## b1factor.crop_type.Corn                                                 ***
+## b1factor.crop_type.Crawfish                                             ***
+## b1factor.crop_type.General Farmworker                                   ***
+## b1factor.crop_type.Hay and Straw                                        ***
+## b1factor.crop_type.Nursery and Greenhouse Workers                       ***
+## b1factor.crop_type.Sheep                                                ***
+## b1factor.crop_type.Tobacco                                              ***
+## b1nodematch.crop_type                                                   ***
+## b1nodematch.EMP_EXPERIENCE_REQD                                         ***
+## b1cov.NBR_WORKERS_REQUESTED                                             ***
+## edgecov.dist_matrix_scaled                                                 
+## b2factor.agent_type.association                                         ***
+## b2factor.agent_type.labor contractor (agent)                            ***
+## edgecov.dist_matrix_scaled:b2factor.agent_type.association                 
+## edgecov.dist_matrix_scaled:b2factor.agent_type.labor contractor (agent)    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Warning:  The standard errors are based on naive pseudolikelihood and are suspect. Set control.ergm$MPLE.covariance.method=&#39;Godambe&#39; for a simulation-based approximation of the standard errors.
+## 
+##      Null Pseudo-deviance: 1893951  on 1366197  degrees of freedom
+##  Residual Pseudo-deviance:   44694  on 1366178  degrees of freedom
+##  
+## AIC: 44732  BIC: 44963  (Smaller is better. MC Std. Err. = 0)</code></pre>
 <div id="full-model-diagnostics" class="section level4">
 <h4>Full Model diagnostics</h4>
 </div>
@@ -1841,6 +1982,38 @@ something unique about crop type clustering of farms (agents are
 specialized), or are there other effects at play (homophily by wage,
 large-requests/small requests of workers, stays state borders or if
 there are cross-state agricultural corridors).</p>
+<p>From the un-boosted pseudolikelihood estimation, (which may produce
+highly biased standard errors, so this is taken with a huge grain of
+salt), it appears that the distance and distance interaction terms are
+insignificant, while the b1nodematch term for crop_type is significant,
+positive and large; indicating strong homophily by crop type even
+controlling for distance and distance by agent type. That is, crop type
+is a more significant predictor for a farm joining a cluster of similar
+farms by agent than just distance alone.</p>
+<p>There is also a very small, but significant, and positive coefficient
+attached to the node match term for whether a farm is requesting workers
+with experience or not, and a very small negative coefficient for the
+number of workers requested. This implies that while experience
+requirements do play a role in the network structure, their influence in
+predicting tie-likelihood between farms is quite small relative to other
+factors.</p>
+<p>The final model offers some useful information about the structure of
+farms’ affiliation with various brokers and agents. It seems that the
+type of crop a farm works with plays a predominant role in selecting an
+agent to work with, even controlling for the distance between farms. It
+seems likely to conclude that agents/brokers do not focus on regional
+corridors (or selecting farms by convenience), but rather specialize in
+particular kinds of crops (and by extension, in recruiting particular
+kinds of workers). This clustering effect suggests that H2A workers are
+not only “workers of convenience” when there are domestic labor
+shortages, but appear to be sought out for particular skills in
+different agricultural activities. An ‘ecological’ analysis of local
+labor market conditions as a nodal attribute by farm might answer some
+interesting questions about the kinds of conditions that dictate tie
+formation with agents; i.e. whether unemployment/the size of the
+undocumented labor force of a region influences a farm’s recruitment
+strategy. A temporal analysis might answer why some farms decide to
+start/stop working with an agent (or the H2A program in general).</p>
 </div>
 </div>
 
